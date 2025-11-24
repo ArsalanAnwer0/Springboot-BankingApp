@@ -7,7 +7,7 @@ pipeline {
     }
 
     environment {
-        DOCKER_IMAGE = "trainwithshubham/bankapp-eks"
+        DOCKER_IMAGE = "arsalananwer0/bankapp-eks"
         DOCKER_TAG = "v${BUILD_NUMBER}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
         SCANNER_HOME = tool 'sonar-scanner'
