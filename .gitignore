@@ -31,3 +31,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Terraform ###
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/bankapp-automate-key
+terraform/bankapp-automate-key.pub
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
