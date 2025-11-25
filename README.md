@@ -1,6 +1,6 @@
 # DevSecOps CI/CD Pipeline with EKS Deployment using ArgoCD
 
-A production-ready Spring Boot banking application deployed on Amazon EKS with a complete CI/CD pipeline using Jenkins, ArgoCD, and comprehensive security scanning.
+A production ready Spring Boot banking application deployed on Amazon EKS with a complete CI/CD pipeline using Jenkins, ArgoCD, and comprehensive security scanning.
 
 ## Project Overview
 
@@ -18,7 +18,7 @@ This project demonstrates a complete DevSecOps implementation for a Spring Boot 
 
 **Infrastructure as Code**: Terraform for AWS infrastructure provisioning
 
-**Monitoring**: Horizontal Pod Autoscaler (HPA) for auto-scaling
+**Monitoring**: Horizontal Pod Autoscaler (HPA) for auto scaling
 
 ## Architecture
 
@@ -460,8 +460,8 @@ kubectl run test-pod --rm -it --image=curlimages/curl:latest --restart=Never -n 
 - **Network Policies**: ClusterIP services for internal communication
 
 ### Best Practices
-- Multi-stage Docker builds for smaller attack surface
-- Non-root containers where possible
+- Multi stage Docker builds for smaller attack surface
+- Non root containers where possible
 - Regular security updates via automated CI/CD
 - Infrastructure as Code for reproducible environments
 
@@ -521,7 +521,7 @@ kubectl describe hpa bankapp-hpa -n bankapp-namespace
 │   └── persistent-volume-claim.yml # MySQL PVC
 ├── terraform/                 # Terraform IaC
 │   └── main.tf               # EC2 instance configuration
-├── Dockerfile                 # Multi-stage Docker build
+├── Dockerfile                 # Multi stage Docker build
 ├── Jenkinsfile               # Jenkins pipeline definition
 ├── pom.xml                   # Maven project configuration
 └── src/                      # Spring Boot application source
