@@ -447,6 +447,16 @@ kubectl describe hpa bankapp-hpa -n bankapp-namespace
 - **StorageClass**: gp2 (AWS EBS)
 - **Credentials**: Stored in Kubernetes Secret
 
+## Security Note
+
+This is a demonstration project for educational purposes. The credentials and secrets included in this repository (such as Kubernetes secrets, database passwords) are for development and testing only. For production deployments:
+
+- Use proper secret management solutions (AWS Secrets Manager, HashiCorp Vault)
+- Never commit credentials or private keys to version control
+- Use environment variables for sensitive configuration
+- Implement proper RBAC and network policies
+- Enable CSRF protection and security headers
+
 ## License
 
 This project is for educational and demonstration purposes.
