@@ -1,5 +1,11 @@
 # Kubernetes Deployment Guide
 
+## Ingress Architecture
+
+![NGINX Ingress Architecture](../images/ingress.png)
+
+The application uses NGINX Ingress Controller to route external HTTP/HTTPS traffic to the banking application services running in the Kubernetes cluster.
+
 ## Prerequisites
 
 Before deploying the application with Ingress and HPA, you need to install:
