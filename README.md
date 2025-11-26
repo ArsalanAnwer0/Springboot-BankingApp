@@ -1,24 +1,23 @@
-# DevSecOps CI/CD Pipeline with EKS Deployment using ArgoCD
+# Complete DevSecOps CI/CD Pipeline with GitOps Deployment on AWS EKS
 
-A production ready Spring Boot banking application deployed on Amazon EKS with a complete CI/CD pipeline using Jenkins, ArgoCD, and comprehensive security scanning.
+A production-ready Spring Boot banking application deployed on Amazon EKS with a complete DevSecOps CI/CD pipeline featuring Jenkins, ArgoCD, SonarQube, OWASP dependency scanning, Trivy container scanning, and comprehensive monitoring with Prometheus and Grafana.
 
 ## Project Overview
 
-This project demonstrates a complete DevSecOps implementation for a Spring Boot banking application, featuring:
+This project demonstrates an enterprise-grade DevSecOps implementation for a Spring Boot banking application with:
 
-**Application**: Spring Boot 3.3.3 banking application with MySQL database
-
-**Container Orchestration**: Amazon EKS (Elastic Kubernetes Service)
-
-**CI/CD Pipeline**: Jenkins with automated build, test, and deployment
-
-**GitOps**: ArgoCD for automated Kubernetes deployments
-
-**Security Scanning**: Trivy for container vulnerability scanning
-
-**Infrastructure as Code**: Terraform for AWS infrastructure provisioning
-
-**Monitoring**: Horizontal Pod Autoscaler (HPA) for auto scaling
+- **Application**: Spring Boot 3.3.3 banking application with MySQL database
+- **Container Orchestration**: Amazon EKS (Elastic Kubernetes Service)
+- **CI/CD Pipeline**: Jenkins with 12-stage automated pipeline
+- **GitOps**: ArgoCD for automated Kubernetes deployments with auto-sync and self-heal
+- **Code Quality**: SonarQube for static code analysis
+- **Security Scanning**:
+  - OWASP Dependency Check for vulnerability scanning
+  - Trivy for container image scanning
+- **Infrastructure as Code**: Terraform for AWS infrastructure provisioning
+- **Package Management**: Helm charts for Kubernetes deployments
+- **Monitoring**: Prometheus + Grafana for comprehensive observability
+- **Auto-Scaling**: Horizontal Pod Autoscaler (HPA) for dynamic scaling
 
 ## Architecture
 
@@ -35,26 +34,46 @@ This project demonstrates a complete DevSecOps implementation for a Spring Boot 
 | **Orchestration** | Kubernetes (Amazon EKS) |
 | **CI/CD** | Jenkins |
 | **GitOps** | ArgoCD |
-| **Security** | Trivy |
+| **Code Quality** | SonarQube |
+| **Security Scanning** | OWASP Dependency-Check, Trivy |
+| **Package Management** | Helm 3 |
+| **Monitoring** | Prometheus, Grafana |
 | **Infrastructure** | Terraform, AWS (EKS, EC2, EBS) |
-| **Monitoring** | Kubernetes HPA, Metrics Server |
+| **Metrics** | Kubernetes Metrics Server, HPA |
 
 ## Infrastructure Components
 
 ### AWS Resources
-- **EKS Cluster**: `bankapp-cluster` in `eu-west-2`
+- **Region**: us-west-1 (N. California)
+- **EKS Cluster**: bankapp-cluster-v2
 - **Node Group**: 2 x t2.medium instances
+- **EC2 Master**: Jenkins server (t2.large)
 - **EBS CSI Driver**: For persistent storage
 - **VPC**: Default VPC configuration
+- **LoadBalancers**:
+  - ArgoCD UI
+  - Grafana Dashboard
+  - BankApp Service
 
 ### Kubernetes Resources
-- **Namespace**: `bankapp-namespace`
-- **Deployments**: BankApp (2 replicas), MySQL (1 replica)
-- **Services**: ClusterIP for internal communication
+- **Namespace**: bankapp-namespace
+- **Deployments**:
+  - BankApp (2 replicas with auto-scaling)
+  - MySQL (1 replica with persistent storage)
+- **Services**:
+  - BankApp: LoadBalancer (external access)
+  - MySQL: ClusterIP (internal only)
 - **ConfigMaps**: Application configuration
 - **Secrets**: Database credentials
 - **PersistentVolumeClaim**: 10Gi EBS volume for MySQL
-- **HPA**: Auto-scaling from 2 to 5 replicas based on CPU (40% threshold)
+- **HPA**: Auto-scaling from 2 to 5 replicas (40% CPU threshold)
+- **Ingress**: NGINX ingress for routing (optional)
+
+### Monitoring Stack
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Visualization and dashboards
+- **Node Exporter**: System metrics
+- **Kube State Metrics**: Kubernetes object metrics
 
 ## CI/CD Pipeline
 
@@ -62,39 +81,27 @@ This project demonstrates a complete DevSecOps implementation for a Spring Boot 
 
 1. **Git Checkout**: Clone repository from GitHub
 2. **Compile**: Maven clean compile
-3. **Test**: Run unit tests (skipped in CI due to database dependency)
+3. **Test**: Run unit tests
 4. **Build Application**: Maven package (creates JAR)
-5. **Build Docker Image**: Multi-stage Docker build
-6. **Trivy Image Scan**: Security vulnerability scanning
-7. **Push to DockerHub**: Push image with version tag
-8. **Update Kubernetes Manifest**: Update deployment YAML with new image tag
-9. **Commit & Push Changes**: Push updated manifest back to GitHub
-10. **ArgoCD Auto-Sync**: ArgoCD detects changes and deploys to EKS
+5. **SonarQube Analysis**: Code quality and security analysis
+6. **Quality Gate**: Validate code quality standards
+7. **OWASP Dependency Check**: Scan dependencies for vulnerabilities
+8. **Build Docker Image**: Multi-stage Docker build
+9. **Trivy Image Scan**: Container security vulnerability scanning
+10. **Push to DockerHub**: Push image with version tag and latest
+11. **Update Kubernetes Manifest**: Update deployment YAML with new image tag
+12. **Commit & Push Changes**: Push updated manifest to trigger GitOps
 
 ### Pipeline Features
 - Automated versioning using Jenkins build number
-- Security scanning with Trivy (HIGH and CRITICAL vulnerabilities)
+- Code quality analysis with SonarQube
+- Security scanning with OWASP Dependency-Check
+- Container vulnerability scanning with Trivy
 - Docker multi-stage builds for optimized image size
 - Automated manifest updates for GitOps workflow
 - Automatic cleanup and docker logout
-
-## Quick Start Guide
-
-Want to replicate this entire DevSecOps pipeline? Follow these steps:
-
-1. **Fork this repository** to your GitHub account
-2. **Provision EC2 instance** using Terraform
-3. **Create EKS cluster** with 2 node groups
-4. **Install ArgoCD** on the cluster
-5. **Install Jenkins** on EC2 instance
-6. **Install Metrics Server** for auto-scaling
-7. **Install NGINX Ingress** (optional, for external access)
-8. **Configure Jenkins pipeline** with your repository
-9. **Make code changes** and watch the magic happen!
-
-Total setup time: **~45-60 minutes** (most is waiting for EKS cluster creation)
-
----
+- Quality gate validation
+- Comprehensive error handling
 
 ## Prerequisites
 
@@ -104,6 +111,7 @@ Total setup time: **~45-60 minutes** (most is waiting for EKS cluster creation)
 - eksctl (v0.167+)
 - Terraform (v1.0+)
 - Docker (v20.10+)
+- Helm (v3.0+)
 - Git
 
 ### AWS Permissions
@@ -112,11 +120,12 @@ Total setup time: **~45-60 minutes** (most is waiting for EKS cluster creation)
 - EBS volume creation
 - IAM role and policy management
 - VPC networking
+- LoadBalancer creation
 
 ### Accounts Needed
 - AWS Account with appropriate permissions
 - DockerHub account (for pushing images)
-- GitHub account (for forking repository)
+- GitHub account (for repository)
 
 ## Complete Setup Instructions
 
@@ -135,7 +144,7 @@ terraform apply -auto-approve
 ssh -i your-key.pem ubuntu@<EC2_PUBLIC_IP>
 ```
 
-#### Install Required Tools
+#### Install Required Tools on EC2
 ```bash
 # AWS CLI
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -151,19 +160,32 @@ sudo mv kubectl /usr/local/bin/
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 sudo mv /tmp/eksctl /usr/local/bin
 
+# Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
 # Docker
 sudo apt update
 sudo apt install -y docker.io
 sudo systemctl start docker
 sudo systemctl enable docker
+
+# Trivy
+sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+sudo apt-get update
+sudo apt-get install -y trivy
+
+# Maven
+sudo apt-get install -y maven
 ```
 
 ### 2. Create EKS Cluster
 
 ```bash
 eksctl create cluster \
-  --name bankapp-cluster \
-  --region eu-west-2 \
+  --name bankapp-cluster-v2 \
+  --region us-west-1 \
   --nodegroup-name bankapp-nodes \
   --node-type t2.medium \
   --nodes 2 \
@@ -177,8 +199,8 @@ Wait approximately 15-20 minutes for cluster creation.
 #### Enable IAM OIDC Provider
 ```bash
 eksctl utils associate-iam-oidc-provider \
-  --region=eu-west-2 \
-  --cluster=bankapp-cluster \
+  --region=us-west-1 \
+  --cluster=bankapp-cluster-v2 \
   --approve
 ```
 
@@ -187,8 +209,8 @@ eksctl utils associate-iam-oidc-provider \
 eksctl create iamserviceaccount \
   --name ebs-csi-controller-sa \
   --namespace kube-system \
-  --cluster bankapp-cluster \
-  --region eu-west-2 \
+  --cluster bankapp-cluster-v2 \
+  --region us-west-1 \
   --attach-policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
   --approve \
   --role-only \
@@ -196,8 +218,8 @@ eksctl create iamserviceaccount \
 
 eksctl create addon \
   --name aws-ebs-csi-driver \
-  --cluster bankapp-cluster \
-  --region eu-west-2 \
+  --cluster bankapp-cluster-v2 \
+  --region us-west-1 \
   --service-account-role-arn arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):role/AmazonEKS_EBS_CSI_DriverRole \
   --force
 ```
@@ -217,8 +239,6 @@ kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}
 # Get ArgoCD admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
-
-Access ArgoCD at the LoadBalancer URL with username `admin`.
 
 #### Create ArgoCD Application
 ```bash
@@ -277,20 +297,25 @@ Access Jenkins at `http://<EC2_PUBLIC_IP>:8080`
 - Docker Pipeline
 - Docker
 - Git
-- Kubernetes CLI
+- SonarQube Scanner
+- OWASP Dependency-Check
 
 #### Configure Jenkins Tools
-1. **JDK**:
-   - Name: `jdk17`
-   - JAVA_HOME: `/usr/lib/jvm/java-17-openjdk-amd64`
 
-2. **Maven**:
-   - Name: `maven3`
-   - MAVEN_HOME: `/usr/share/maven`
+1. **JDK** (Manage Jenkins → Tools → JDK installations):
+   - Name: JDK17
+   - JAVA_HOME: /usr/lib/jvm/java-17-openjdk-amd64
+   - Uncheck "Install automatically"
 
-#### Add Jenkins Credentials
-1. **GitHub** (ID: `github`): Username with password/token
-2. **DockerHub** (ID: `dockerhub`): Username with password
+2. **Maven** (Manage Jenkins → Tools → Maven installations):
+   - Name: Maven
+   - MAVEN_HOME: /usr/share/maven
+   - Uncheck "Install automatically"
+
+3. **Dependency-Check** (Manage Jenkins → Tools → Dependency-Check installations):
+   - Name: DP-Check
+   - Check "Install automatically"
+   - Install from github.com
 
 #### Configure Docker Permissions
 ```bash
@@ -298,174 +323,147 @@ sudo usermod -aG docker jenkins
 sudo systemctl restart jenkins
 ```
 
-#### Create Jenkins Pipeline Job
+### 5. Install and Configure SonarQube
 
-1. Open Jenkins UI at `http://<EC2_PUBLIC_IP>:8080`
-2. Click "New Item" → Enter name (e.g., "bankapp-pipeline") → Select "Pipeline"
-3. Under "Pipeline" section:
+```bash
+# Run SonarQube in Docker
+docker run -d --name sonarqube \
+  -p 9000:9000 \
+  sonarqube:latest
+
+# Wait for SonarQube to start
+sleep 60
+```
+
+Access SonarQube at `http://<EC2_PUBLIC_IP>:9000`
+- Default credentials: admin / admin
+- Change password on first login
+
+#### Configure SonarQube in Jenkins
+
+1. **Install SonarQube Scanner Plugin** in Jenkins
+2. **Configure SonarQube Server** (Manage Jenkins → System → SonarQube servers):
+   - Name: sonarqube-server
+   - Server URL: http://<EC2_PRIVATE_IP>:9000
+   - Server authentication token: (Generate in SonarQube → My Account → Security → Tokens)
+
+3. **Add SonarQube Token to Jenkins Credentials**:
+   - Kind: Secret text
+   - Secret: <your-sonarqube-token>
+   - ID: sonarqube
+
+4. **Configure SonarQube Scanner** (Manage Jenkins → Tools):
+   - Name: SonarQube Scanner
+   - Install automatically from Maven Central
+
+### 6. Configure Jenkins Credentials
+
+1. **GitHub** (ID: github):
+   - Kind: Username with password
+   - Username: Your GitHub username
+   - Password: GitHub Personal Access Token
+   - ID: github
+
+2. **DockerHub** (ID: dockerhub):
+   - Kind: Username with password
+   - Username: Your DockerHub username
+   - Password: DockerHub password/token
+   - ID: dockerhub
+
+### 7. Create Jenkins Pipeline Job
+
+1. Open Jenkins → New Item
+2. Enter name: bankapp-pipeline
+3. Select "Pipeline"
+4. Under "Pipeline" section:
    - Definition: "Pipeline script from SCM"
    - SCM: Git
-   - Repository URL: `https://github.com/YOUR_USERNAME/Springboot-BankingApp.git`
-   - Branch: `*/main`
-   - Script Path: `Jenkinsfile`
-4. Click "Save"
+   - Repository URL: https://github.com/YOUR_USERNAME/Springboot-BankingApp.git
+   - Credentials: Select your GitHub credentials
+   - Branch: */main
+   - Script Path: Jenkinsfile
+5. Click "Save"
 
-### 5. Install Metrics Server
-
-The Metrics Server is required for Horizontal Pod Autoscaler (HPA) to work.
-
-```bash
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-
-# Verify installation
-kubectl get deployment metrics-server -n kube-system
-```
-
-### 6. Install NGINX Ingress Controller (Optional)
-
-If you want external access via domain/LoadBalancer:
+### 8. Install Prometheus and Grafana
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/aws/deploy.yaml
+# Add Prometheus Helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
 
-# Wait for LoadBalancer to be provisioned
-kubectl get svc ingress-nginx-controller -n ingress-nginx --watch
+# Create monitoring namespace
+kubectl create namespace monitoring
 
-# Get LoadBalancer URL
-kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+# Install Prometheus + Grafana stack
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false
+
+# Expose Grafana via LoadBalancer
+kubectl patch svc prometheus-grafana -n monitoring -p '{"spec":{"type":"LoadBalancer"}}'
+
+# Get Grafana admin password
+kubectl get secret prometheus-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 -d
 ```
 
-#### Update Ingress Manifest
+Access Grafana at the LoadBalancer URL with username `admin`.
 
-Update `kubernetes/bankapp-ingress.yml` with your LoadBalancer IP:
-```yaml
-spec:
-  rules:
-  - host: bankapp.<LOADBALANCER_IP>.nip.io
-```
+### 9. Configure SonarQube Webhook (Optional)
 
-Then apply:
-```bash
-kubectl apply -f kubernetes/bankapp-ingress.yml
-```
+To enable Quality Gate feedback in Jenkins:
 
-### 7. Install Security Tools
+1. Go to SonarQube → Administration → Configuration → Webhooks
+2. Click "Create"
+3. Name: Jenkins
+4. URL: http://<EC2_PRIVATE_IP>:8080/sonarqube-webhook/
+5. Click "Create"
 
-```bash
-# Install Trivy
-sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-sudo apt-get update
-sudo apt-get install -y trivy
-```
-
-### 8. Update Configuration Files
-
-Before running the pipeline, update these files with your information:
-
-1. **Jenkinsfile**: Update DockerHub username
-   ```groovy
-   DOCKER_IMAGE = 'YOUR_DOCKERHUB_USERNAME/bankapp-eks'
-   ```
-
-2. **kubernetes/bankapp-deployment.yml**: Update image name
-   ```yaml
-   image: YOUR_DOCKERHUB_USERNAME/bankapp-eks:v1
-   ```
-
-3. **ArgoCD Application** (if created manually): Update repo URL
-   ```yaml
-   repoURL: 'https://github.com/YOUR_USERNAME/Springboot-BankingApp.git'
-   ```
-
-## Deployment
-
-### Deploy via ArgoCD (GitOps)
-
-1. Push changes to GitHub repository
-2. ArgoCD automatically syncs and deploys to EKS
-
-### Manual Deployment
+### 10. Expose Application via LoadBalancer
 
 ```bash
-# Apply Kubernetes manifests
-kubectl apply -f kubernetes/bankapp-namespace.yml
-kubectl apply -f kubernetes/configmap.yml
-kubectl apply -f kubernetes/mysql-secret.yml
-kubectl apply -f kubernetes/persistent-volume-claim.yml
-kubectl apply -f kubernetes/mysql-deployment.yml
-kubectl apply -f kubernetes/mysql-service.yml
+# Change service type to LoadBalancer
+kubectl patch svc bankapp-service -n bankapp-namespace -p '{"spec":{"type":"LoadBalancer"}}'
 
-# Wait for MySQL to be ready
-kubectl wait --for=condition=ready pod -l app=mysql -n bankapp-namespace --timeout=300s
-
-# Deploy application
-kubectl apply -f kubernetes/bankapp-deployment.yml
-kubectl apply -f kubernetes/bankapp-service.yml
-kubectl apply -f kubernetes/bankapp-hpa.yml
+# Get application URL
+kubectl get svc bankapp-service -n bankapp-namespace
 ```
-
-## Verification
-
-### Check Deployments
-```bash
-kubectl get all -n bankapp-namespace
-```
-
-### Check ArgoCD Application
-```bash
-kubectl get application bankapp -n argocd
-```
-
-### View Application Logs
-```bash
-kubectl logs -f deployment/bankapp-deploy -n bankapp-namespace
-```
-
-### Test Application
-```bash
-kubectl run test-pod --rm -it --image=curlimages/curl:latest --restart=Never -n bankapp-namespace -- curl http://bankapp-service:8080
-```
-
-## CI/CD Workflow
-
-### Triggering a Build
-
-1. Make code changes in your repository
-2. Commit and push to GitHub
-3. Jenkins pipeline automatically triggers
-4. Pipeline builds, tests, scans, and pushes Docker image
-5. Pipeline updates Kubernetes manifest with new image tag
-6. ArgoCD detects change and deploys to EKS
-7. Rolling update replaces old pods with new ones
-
-### Monitoring Pipeline
-
-- **Jenkins Dashboard**: View build status and logs
-- **ArgoCD UI**: Monitor deployment status and health
-- **Kubernetes**: Check pod status and logs
 
 ## Security Features
 
+### Code Quality & Security
+- **SonarQube Analysis**: Static code analysis for bugs, vulnerabilities, and code smells
+- **Quality Gates**: Enforced quality standards before deployment
+- **OWASP Dependency Check**: Scans all dependencies for known vulnerabilities
+  - Checks against National Vulnerability Database (NVD)
+  - Reports Critical, High, Medium, and Low severity issues
+
 ### Container Security
-- **Trivy Scanning**: Scans Docker images for vulnerabilities
+- **Trivy Scanning**: Comprehensive container vulnerability scanning
 - **Severity Filtering**: Focuses on HIGH and CRITICAL vulnerabilities
 - **Automated Scanning**: Every build is scanned before deployment
+- **Multi-stage Builds**: Reduces attack surface by excluding build dependencies
 
 ### Kubernetes Security
 - **Secrets Management**: Database credentials stored in Kubernetes Secrets
 - **Resource Limits**: CPU and memory limits defined for all containers
 - **Health Checks**: Readiness and liveness probes configured
 - **Network Policies**: ClusterIP services for internal communication
+- **RBAC**: Role-Based Access Control for service accounts
 
-### Best Practices
-- Multi stage Docker builds for smaller attack surface
-- Non root containers where possible
-- Regular security updates via automated CI/CD
-- Infrastructure as Code for reproducible environments
+## Monitoring and Observability
 
-## Monitoring and Scaling
+### Prometheus Metrics
+- **Cluster Metrics**: CPU, memory, disk, network usage
+- **Node Metrics**: Individual node performance
+- **Pod Metrics**: Application-specific metrics
+- **Custom Metrics**: Application performance indicators
+
+### Grafana Dashboards
+Pre-configured dashboards available:
+- **Kubernetes / Compute Resources / Cluster**: Overall cluster health
+- **Kubernetes / Compute Resources / Namespace (Pods)**: Pod-level metrics
+- **Kubernetes / Compute Resources / Pod**: Individual pod performance
+- **Node Exporter / Nodes**: System-level metrics
 
 ### Horizontal Pod Autoscaler (HPA)
 ```yaml
@@ -474,82 +472,190 @@ maxReplicas: 5
 targetCPUUtilizationPercentage: 40
 ```
 
-HPA automatically scales the application based on CPU utilization.
+HPA automatically scales the application between 2-5 replicas based on CPU utilization.
 
-### Metrics Server
-Required for HPA functionality. Already installed with EKS.
+## GitOps Workflow
 
-### Checking HPA Status
-```bash
-kubectl get hpa -n bankapp-namespace
-kubectl describe hpa bankapp-hpa -n bankapp-namespace
-```
+### How It Works
 
-## Troubleshooting
+1. Developer pushes code to GitHub
+2. Jenkins pipeline automatically triggers
+3. Pipeline executes all stages (build, test, scan, build image)
+4. Pipeline updates Kubernetes manifest with new image tag
+5. Pipeline commits and pushes updated manifest to GitHub
+6. ArgoCD detects the change (within 3 minutes)
+7. ArgoCD automatically syncs and deploys to EKS
+8. Kubernetes performs rolling update
+9. Old pods are gracefully terminated
+10. New pods become ready and start serving traffic
 
-### Pipeline Fails at Docker Build
-- Verify Jenkins user is in docker group: `groups jenkins`
-- Restart Jenkins: `sudo systemctl restart jenkins`
-
-### ArgoCD Not Syncing
-- Check application status: `kubectl get application bankapp -n argocd`
-- Force sync: `kubectl patch application bankapp -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'`
-
-### Pods Not Starting
-- Check logs: `kubectl logs <pod-name> -n bankapp-namespace`
-- Describe pod: `kubectl describe pod <pod-name> -n bankapp-namespace`
-- Verify PVC is bound: `kubectl get pvc -n bankapp-namespace`
-
-### MySQL Connection Issues
-- Verify MySQL pod is running: `kubectl get pods -l app=mysql -n bankapp-namespace`
-- Check MySQL logs: `kubectl logs -l app=mysql -n bankapp-namespace`
-- Verify service: `kubectl get svc mysql-service -n bankapp-namespace`
+### ArgoCD Features
+- **Auto-Sync**: Automatically deploys changes from Git
+- **Self-Heal**: Automatically fixes drift from desired state
+- **Rollback**: Easy rollback to previous versions
+- **Health Status**: Real-time application health monitoring
+- **Sync Waves**: Ordered resource deployment
 
 ## Project Structure
 
 ```
 .
-├── kubernetes/                 # Kubernetes manifests
-│   ├── bankapp-deployment.yml # BankApp deployment
-│   ├── bankapp-service.yml    # BankApp service
-│   ├── bankapp-hpa.yml        # Horizontal Pod Autoscaler
-│   ├── bankapp-namespace.yml  # Namespace definition
-│   ├── configmap.yml          # Application configuration
-│   ├── mysql-secret.yml       # MySQL credentials
-│   ├── mysql-deployment.yml   # MySQL deployment
-│   ├── mysql-service.yml      # MySQL service
+├── kubernetes/                     # Kubernetes manifests
+│   ├── bankapp-deployment.yml      # BankApp deployment
+│   ├── bankapp-service.yml         # BankApp service
+│   ├── bankapp-hpa.yml             # Horizontal Pod Autoscaler
+│   ├── bankapp-ingress.yml         # Ingress configuration
+│   ├── bankapp-namespace.yml       # Namespace definition
+│   ├── configmap.yml               # Application configuration
+│   ├── mysql-secret.yml            # MySQL credentials
+│   ├── mysql-deployment.yml        # MySQL deployment
+│   ├── mysql-service.yml           # MySQL service
 │   └── persistent-volume-claim.yml # MySQL PVC
-├── terraform/                 # Terraform IaC
-│   └── main.tf               # EC2 instance configuration
-├── Dockerfile                 # Multi stage Docker build
-├── Jenkinsfile               # Jenkins pipeline definition
-├── pom.xml                   # Maven project configuration
-└── src/                      # Spring Boot application source
+├── helm/                           # Helm charts
+│   └── bankapp/                    # BankApp Helm chart
+│       ├── Chart.yaml              # Chart metadata
+│       ├── values.yaml             # Default values
+│       └── templates/              # Kubernetes templates
+├── terraform/                      # Terraform IaC
+│   ├── main.tf                     # EC2 instance configuration
+│   └── variables.tf                # Variable definitions
+├── src/                            # Spring Boot application
+│   ├── main/java/                  # Application code
+│   └── main/resources/             # Application resources
+├── Dockerfile                      # Multi-stage Docker build
+├── Jenkinsfile                     # Jenkins pipeline definition
+├── pom.xml                         # Maven project configuration
+└── README.md                       # This file
 ```
 
-## Key Kubernetes Manifests
+## Troubleshooting
 
-### BankApp Deployment
-- **Replicas**: 2 (high availability)
-- **Image**: arsalananwer0/bankapp-eks (auto-updated by pipeline)
-- **Resources**: 512Mi-1Gi memory, 250m-500m CPU
-- **Health Checks**: Readiness (30s delay) and Liveness (60s delay) probes
+### Pipeline Fails at Docker Build
+```bash
+# Verify Jenkins user is in docker group
+groups jenkins
 
-### MySQL Deployment
-- **Storage**: 10Gi EBS volume
-- **StorageClass**: gp2 (AWS EBS)
-- **Credentials**: Stored in Kubernetes Secret
+# If not, add jenkins to docker group
+sudo usermod -aG docker jenkins
+sudo systemctl restart jenkins
+```
+
+### ArgoCD Not Syncing
+```bash
+# Check application status
+kubectl get application bankapp -n argocd
+
+# Force sync
+kubectl patch app bankapp -n argocd --type merge -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
+
+# Refresh application
+kubectl -n argocd patch app bankapp --type merge -p '{"spec":{"source":{"targetRevision":"main"}}}'
+```
+
+### SonarQube Analysis Fails
+```bash
+# Check SonarQube is running
+docker ps | grep sonarqube
+
+# View SonarQube logs
+docker logs sonarqube
+
+# Restart SonarQube
+docker restart sonarqube
+```
+
+### Pods Not Starting
+```bash
+# Check pod status
+kubectl get pods -n bankapp-namespace
+
+# View pod logs
+kubectl logs <pod-name> -n bankapp-namespace
+
+# Describe pod for events
+kubectl describe pod <pod-name> -n bankapp-namespace
+
+# Check PVC status
+kubectl get pvc -n bankapp-namespace
+```
+
+### MySQL Connection Issues
+```bash
+# Verify MySQL is running
+kubectl get pods -l app=mysql -n bankapp-namespace
+
+# Check MySQL logs
+kubectl logs -l app=mysql -n bankapp-namespace
+
+# Test connectivity from app pod
+kubectl exec -it <bankapp-pod> -n bankapp-namespace -- nc -zv mysql-svc 3306
+```
+
+### Grafana Not Accessible
+```bash
+# Check Grafana service
+kubectl get svc prometheus-grafana -n monitoring
+
+# Get LoadBalancer URL
+kubectl get svc prometheus-grafana -n monitoring -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Check Grafana pods
+kubectl get pods -l app.kubernetes.io/name=grafana -n monitoring
+```
+
+## Access URLs
+
+After setup, you can access:
+
+- **Jenkins**: http://<EC2_PUBLIC_IP>:8080
+- **SonarQube**: http://<EC2_PUBLIC_IP>:9000
+- **ArgoCD**: http://<ARGOCD_LOADBALANCER>
+- **Grafana**: http://<GRAFANA_LOADBALANCER>
+- **BankApp**: http://<BANKAPP_LOADBALANCER>:8080
 
 ## Security Note
 
-This is a demonstration project for educational purposes. The credentials and secrets included in this repository (such as Kubernetes secrets, database passwords) are for development and testing only. For production deployments:
+This is a demonstration project for educational purposes. The credentials and secrets included are for development and testing only. For production deployments:
 
-- Use proper secret management solutions (AWS Secrets Manager, HashiCorp Vault)
+- Use AWS Secrets Manager or HashiCorp Vault for secret management
 - Never commit credentials or private keys to version control
-- Use environment variables for sensitive configuration
 - Implement proper RBAC and network policies
-- Enable CSRF protection and security headers
+- Enable pod security policies and admission controllers
+- Use private container registries
+- Enable audit logging
+- Implement SSL/TLS for all services
+- Use managed databases (RDS) instead of self-hosted MySQL
+- Enable encryption at rest and in transit
+- Implement proper backup and disaster recovery
+
+## Key Achievements
+
+- Complete DevSecOps pipeline with 12 automated stages
+- GitOps deployment with ArgoCD auto-sync and self-heal
+- Code quality analysis with SonarQube
+- Security scanning with OWASP and Trivy
+- Infrastructure as Code with Terraform
+- Container orchestration with Kubernetes on AWS EKS
+- Comprehensive monitoring with Prometheus and Grafana
+- Auto-scaling with Horizontal Pod Autoscaler
+- Helm charts for package management
+- Production-ready architecture with high availability
 
 ## License
 
 This project is for educational and demonstration purposes.
+
+## Author
+
+**Arsalan Anwer**
+- GitHub: [@ArsalanAnwer0](https://github.com/ArsalanAnwer0)
+- LinkedIn: [Arsalan Anwer](https://www.linkedin.com/in/arsalan-anwer/)
+
+## Acknowledgments
+
+- Spring Boot Team for the excellent framework
+- Kubernetes community for comprehensive documentation
+- Jenkins community for CI/CD best practices
+- ArgoCD team for GitOps implementation
+- SonarQube for code quality tools
+- OWASP for security scanning tools
